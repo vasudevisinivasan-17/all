@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { GameState } from './types';
-import { getRandomLetter, LETTER_SCORES, getLevelConfig, GRID_SIZE_INITIAL } from './constants';
+import { getRandomLetter, LETTER_SCORES, getLevelConfig, GRID_SIZE_INITIAL, THEMES } from './constants';
 import WordGrid from './components/WordGrid';
 import GameHeader from './components/GameHeader';
 import { getHintFromGemini, checkWordWithGemini } from './services/geminiService';
@@ -17,7 +17,10 @@ const App: React.FC = () => {
     targetScore: 150,
     foundWords: [],
     minWordsRequired: 3,
+    currentThemeId: 'classic'
   });
+
+  const currentTheme = THEMES[gameState.currentThemeId] || THEMES.classic;
 
   const [gridSize, setGridSize] = useState(GRID_SIZE_INITIAL);
   const [minWordLength, setMinWordLength] = useState(3);
@@ -139,7 +142,6 @@ const App: React.FC = () => {
     setTimeout(() => setMsg(""), 1200);
   };
 
-  // Handle Letter Click
   const onLetterClick = (index: number, row: number, col: number) => {
     if (gameState.isGameOver || gameState.isLevelComplete || isAiLoading || gameState.isPaused) return;
 
@@ -193,18 +195,31 @@ const App: React.FC = () => {
     setGameState(prev => ({ ...prev, isPaused: !prev.isPaused }));
   };
 
+  const setTheme = (themeId: string) => {
+    setGameState(prev => ({ ...prev, currentThemeId: themeId }));
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-lg bg-white p-6 md:p-8 rounded-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] relative overflow-hidden border-t-8 border-indigo-500">
+    <div className={`min-h-screen flex flex-col items-center justify-center p-4 transition-colors duration-500 ${currentTheme.bgClass}`}>
+      <div className={`w-full max-w-lg p-6 md:p-8 rounded-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] relative overflow-hidden border-t-8 transition-all duration-500 ${currentTheme.cardClass}`}>
         
-        {/* Aesthetic Gradients */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-100 rounded-full blur-[100px] opacity-40 -translate-y-1/2 translate-x-1/2" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-100 rounded-full blur-[100px] opacity-40 translate-y-1/2 -translate-x-1/2" />
+        {/* Theme Selector */}
+        <div className="absolute top-4 left-6 z-30 flex gap-1 bg-black/5 p-1 rounded-full border border-white/20">
+          {Object.values(THEMES).map(t => (
+            <button
+              key={t.id}
+              onClick={() => setTheme(t.id)}
+              title={t.name}
+              className={`w-4 h-4 rounded-full border border-white/40 transition-all ${t.id === gameState.currentThemeId ? 'scale-125 ring-2 ring-white ring-offset-1 shadow-md' : 'opacity-40 hover:opacity-100'}`}
+              style={{ backgroundColor: t.primaryBtn.split(' ')[0].replace('bg-', '') }}
+            />
+          ))}
+        </div>
 
         <div className="relative z-20 mb-4 flex justify-center">
             <button 
                 onClick={togglePause}
-                className="group flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-indigo-100 text-slate-600 hover:text-indigo-600 rounded-full transition-all duration-300 font-bold text-[10px] uppercase tracking-widest border border-slate-200 hover:border-indigo-200"
+                className={`group flex items-center gap-2 px-4 py-2 bg-black/5 hover:bg-black/10 rounded-full transition-all duration-300 font-bold text-[10px] uppercase tracking-widest border border-black/5 ${currentTheme.accentText}`}
             >
                 {gameState.isPaused ? (
                     <><span className="text-sm">▶</span> Resume Game</>
@@ -219,21 +234,22 @@ const App: React.FC = () => {
           level={gameState.level} 
           timer={gameState.timer} 
           targetScore={gameState.targetScore}
+          theme={currentTheme}
         />
 
         <div className="relative z-10">
           <div className="flex justify-between items-center mb-6 px-2">
             <div className="flex flex-col">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Stage Goal</span>
-              <span className={`text-xs font-bold transition-colors ${gameState.foundWords.length >= gameState.minWordsRequired ? 'text-green-500' : 'text-slate-600'}`}>
+              <span className={`text-[10px] font-black uppercase tracking-widest opacity-40 ${currentTheme.accentText}`}>Stage Goal</span>
+              <span className={`text-xs font-bold transition-colors ${gameState.foundWords.length >= gameState.minWordsRequired ? 'text-green-500' : 'opacity-70'}`}>
                 {gameState.foundWords.length} / {gameState.minWordsRequired} Words
               </span>
             </div>
             <div className="flex gap-2">
-              <span className="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full uppercase">
+              <span className={`text-[10px] font-bold bg-black/5 px-3 py-1 rounded-full uppercase ${currentTheme.accentText}`}>
                  Grid: {gridSize}x{gridSize}
               </span>
-              <span className="text-[10px] font-bold text-purple-500 bg-purple-50 px-3 py-1 rounded-full uppercase">
+              <span className={`text-[10px] font-bold bg-black/5 px-3 py-1 rounded-full uppercase ${currentTheme.accentText}`}>
                  Min: {minWordLength}
               </span>
             </div>
@@ -244,15 +260,16 @@ const App: React.FC = () => {
             selectedIndices={selectedIndices} 
             onLetterClick={onLetterClick} 
             size={gridSize}
+            theme={currentTheme}
           />
 
           <div className="mt-8 flex flex-col items-center gap-6">
             <div className="h-16 flex flex-col items-center justify-center">
-               <span className={`text-4xl font-black tracking-[0.2em] font-fredoka uppercase transition-all duration-300 ${isAiLoading ? 'opacity-40 scale-95' : 'text-indigo-600 scale-110'}`}>
+               <span className={`text-4xl font-black tracking-[0.2em] uppercase transition-all duration-300 ${currentTheme.fontFamily} ${isAiLoading ? 'opacity-40 scale-95' : `scale-110 ${currentTheme.accentText}`}`}>
                   {currentWord || "Find Words"}
                </span>
                {isAiLoading && (
-                 <span className="text-[10px] font-black text-purple-500 uppercase tracking-[0.3em] animate-bounce mt-2">
+                 <span className={`text-[10px] font-black uppercase tracking-[0.3em] animate-bounce mt-2 ${currentTheme.accentText}`}>
                    Verifying...
                  </span>
                )}
@@ -261,7 +278,7 @@ const App: React.FC = () => {
             <div className="flex gap-4 w-full max-w-sm">
               <button 
                 onClick={clearSelection}
-                className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-[1.5rem] font-bold hover:bg-slate-200 transition-all active:scale-95 shadow-sm border-b-4 border-slate-300"
+                className="flex-1 py-4 bg-black/5 text-slate-500 rounded-[1.5rem] font-bold hover:bg-black/10 transition-all active:scale-95 border-b-4 border-black/10"
               >
                 Reset
               </button>
@@ -271,7 +288,7 @@ const App: React.FC = () => {
                 className={`flex-[2] py-4 rounded-[1.5rem] font-black text-white shadow-xl transition-all active:scale-95 border-b-4 ${
                   isAiLoading || currentWord.length < minWordLength || gameState.isPaused
                     ? 'bg-slate-200 border-slate-300 cursor-not-allowed text-slate-400' 
-                    : 'bg-indigo-600 border-indigo-800 hover:bg-indigo-700 hover:-translate-y-0.5'
+                    : `${currentTheme.primaryBtn} hover:-translate-y-0.5`
                 }`}
               >
                 {isAiLoading ? 'CHECKING...' : 'SUBMIT WORD'}
@@ -282,14 +299,14 @@ const App: React.FC = () => {
               <button 
                 onClick={getHint}
                 disabled={isAiLoading || gameState.isPaused}
-                className="group flex items-center gap-2 text-xs font-black text-slate-400 hover:text-indigo-600 transition-colors uppercase tracking-widest disabled:opacity-50"
+                className={`group flex items-center gap-2 text-xs font-black transition-colors uppercase tracking-widest disabled:opacity-50 opacity-60 hover:opacity-100 ${currentTheme.accentText}`}
               >
-                <span className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-indigo-100 transition-colors">✨</span>
+                <span className="w-6 h-6 rounded-full bg-black/5 flex items-center justify-center group-hover:bg-black/10 transition-colors">✨</span>
                 AI Hint ({20 + (gameState.level * 10)} PTS)
               </button>
 
               {hint && (
-                <div className="px-6 py-3 bg-amber-50 border-2 border-amber-100 rounded-[1.5rem] text-amber-700 text-sm font-black animate-bounce shadow-md">
+                <div className={`px-6 py-3 bg-white border-2 rounded-[1.5rem] text-sm font-black animate-bounce shadow-md ${currentTheme.accentText} border-black/5`}>
                   TRY: <span className="uppercase tracking-widest text-lg ml-1">{hint}</span>
                 </div>
               )}
@@ -305,18 +322,18 @@ const App: React.FC = () => {
         )}
 
         {/* Collection Section */}
-        <div className="mt-10 pt-8 border-t border-slate-100">
+        <div className="mt-10 pt-8 border-t border-black/5">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">Found Words</h3>
+            <h3 className={`text-[10px] font-black uppercase tracking-[0.3em] opacity-30 ${currentTheme.accentText}`}>Found Words</h3>
           </div>
           <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto pr-2 scrollbar-hide">
             {gameState.foundWords.map((w, idx) => (
-              <span key={idx} className="bg-gradient-to-br from-indigo-50 to-white text-indigo-600 px-4 py-2 rounded-[1rem] text-xs font-black uppercase shadow-sm border border-indigo-100 animate-in slide-in-from-bottom-2 duration-300">
+              <span key={idx} className={`bg-white/50 px-4 py-2 rounded-[1rem] text-xs font-black uppercase shadow-sm border border-black/5 animate-in slide-in-from-bottom-2 duration-300 ${currentTheme.accentText}`}>
                 {w}
               </span>
             ))}
             {gameState.foundWords.length === 0 && (
-              <div className="w-full flex flex-col items-center py-4 text-slate-300 opacity-50">
+              <div className={`w-full flex flex-col items-center py-4 opacity-30 ${currentTheme.accentText}`}>
                 <span className="text-[10px] font-bold uppercase tracking-wider italic">Tap letters to begin</span>
               </div>
             )}
@@ -325,15 +342,15 @@ const App: React.FC = () => {
 
         {/* Pause Overlay */}
         {gameState.isPaused && (
-          <div className="absolute inset-0 z-[80] bg-indigo-900/40 backdrop-blur-md flex flex-col items-center justify-center p-10 text-center animate-in fade-in duration-300">
-            <div className="bg-white p-8 rounded-[3rem] shadow-2xl flex flex-col items-center max-w-[280px]">
-                <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mb-6">
+          <div className="absolute inset-0 z-[80] bg-black/40 backdrop-blur-md flex flex-col items-center justify-center p-10 text-center animate-in fade-in duration-300">
+            <div className={`p-8 rounded-[3rem] shadow-2xl flex flex-col items-center max-w-[280px] ${currentTheme.cardClass} bg-white`}>
+                <div className="w-20 h-20 bg-black/5 rounded-full flex items-center justify-center mb-6">
                     <span className="text-4xl">⏸</span>
                 </div>
-                <h2 className="text-3xl font-black text-slate-900 font-fredoka mb-6">GAME PAUSED</h2>
+                <h2 className={`text-3xl font-black mb-6 ${currentTheme.accentText} ${currentTheme.fontFamily}`}>GAME PAUSED</h2>
                 <button 
                     onClick={togglePause}
-                    className="w-full py-4 bg-indigo-600 text-white rounded-[1.5rem] font-black text-xl shadow-xl hover:bg-indigo-700 transition-all active:scale-95 border-b-4 border-indigo-900"
+                    className={`w-full py-4 text-white rounded-[1.5rem] font-black text-xl shadow-xl transition-all active:scale-95 border-b-4 ${currentTheme.primaryBtn}`}
                 >
                     RESUME
                 </button>
@@ -347,7 +364,7 @@ const App: React.FC = () => {
             <div className={`mb-8 p-6 rounded-full ${gameState.isLevelComplete ? 'bg-green-50' : 'bg-red-50'} shadow-inner`}>
               <span className="text-7xl">{gameState.isLevelComplete ? '🌟' : '💀'}</span>
             </div>
-            <h2 className="text-6xl font-black text-slate-900 font-fredoka mb-3 leading-tight">
+            <h2 className={`text-6xl font-black text-slate-900 font-fredoka mb-3 leading-tight`}>
               {gameState.isLevelComplete ? 'VICTORY' : 'DEFEAT'}
             </h2>
             <p className="text-slate-400 font-bold mb-10 max-w-[280px] uppercase text-xs tracking-[0.1em]">
@@ -370,7 +387,7 @@ const App: React.FC = () => {
             {gameState.isLevelComplete ? (
               <button 
                 onClick={() => initLevel(gameState.level + 1)}
-                className="w-full py-6 bg-indigo-600 text-white rounded-[2rem] font-black text-2xl shadow-2xl hover:bg-indigo-700 transition-all active:scale-95 border-b-8 border-indigo-900"
+                className={`w-full py-6 text-white rounded-[2rem] font-black text-2xl shadow-2xl transition-all active:scale-95 border-b-8 ${currentTheme.primaryBtn}`}
               >
                 NEXT STAGE
               </button>
@@ -387,8 +404,8 @@ const App: React.FC = () => {
       </div>
       
       <div className="mt-10 flex flex-col items-center gap-2">
-         <p className="font-black text-slate-300 text-[10px] uppercase tracking-[0.2em]">Manual Submission</p>
-         <p className="text-[10px] text-slate-300 uppercase tracking-tighter opacity-70">Tap SUBMIT WORD to check your word</p>
+         <p className="font-black text-slate-300 text-[10px] uppercase tracking-[0.2em]">Visual Themes</p>
+         <p className="text-[10px] text-slate-300 uppercase tracking-tighter opacity-70">Switch themes using the top-left icons</p>
       </div>
     </div>
   );
