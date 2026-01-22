@@ -1,32 +1,47 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-body {
-    margin: 0;
-    padding: 0;
-    overflow-x: hidden;
+@layer base {
+  body {
+    @apply m-0 p-0 overflow-x-hidden antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, .font-fredoka {
+    font-family: 'Fredoka', sans-serif;
+  }
 }
 
-@keyframes pop-selection {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.15); }
-  100% { transform: scale(0.95); }
+/* Custom Animations */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
 }
 
-.animate-pop-selection {
-  animation: pop-selection 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
 }
 
-@keyframes ring-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(165, 180, 252, 0.6); }
-  70% { box-shadow: 0 0 0 10px rgba(165, 180, 252, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(165, 180, 252, 0); }
+@keyframes float-up {
+  0% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(-50px); opacity: 0; }
 }
 
-.animate-ring-pulse {
-  animation: ring-pulse 1.5s infinite;
+.animate-float-up {
+  animation: float-up 1s ease-out forwards;
+}
+
+@keyframes rainbow-border {
+  0% { border-color: #f87171; }
+  33% { border-color: #60a5fa; }
+  66% { border-color: #34d399; }
+  100% { border-color: #f87171; }
+}
+
+.animate-rainbow {
+  animation: rainbow-border 3s linear infinite;
 }
 
 /* Custom Scrollbar */
@@ -36,4 +51,29 @@ body {
 .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
+}
+
+.glass-morphism {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Game Grid Specifics */
+.word-grid-container {
+  perspective: 1000px;
+}
+
+.cell-button {
+  transform-style: preserve-3d;
+  transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
+}
+
+.cell-button:active {
+  transform: scale(0.92) rotateX(10deg);
+}
+
+.grid-cell-selected {
+  transform: scale(0.95);
 }
