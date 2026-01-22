@@ -1,7 +1,8 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// process.env.API_KEY is replaced by Vite's define plugin during build
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 
 export const getHintFromGemini = async (grid: string[][]): Promise<string> => {
   const gridString = grid.map(row => row.join(" ")).join("\n");
@@ -30,11 +31,12 @@ export const getHintFromGemini = async (grid: string[][]): Promise<string> => {
 
     const text = response.text;
     if (!text) {
+      console.warn("Gemini returned empty text for hint.");
       return "HINT_ERROR";
     }
 
     const result = JSON.parse(text.trim());
-    return result.word;
+    return result.word || "HINT_ERROR";
   } catch (error) {
     console.error("Gemini hint failed:", error);
     return "HINT_ERROR";
@@ -55,6 +57,7 @@ export const checkWordWithGemini = async (word: string): Promise<boolean> => {
     
     return text.trim().toUpperCase().includes("YES");
   } catch (error) {
+    console.error("Gemini check word failed:", error);
     return false;
   }
 };
