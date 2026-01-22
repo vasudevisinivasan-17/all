@@ -28,7 +28,12 @@ export const getHintFromGemini = async (grid: string[][]): Promise<string> => {
       }
     });
 
-    const result = JSON.parse(response.text.trim());
+    const text = response.text;
+    if (!text) {
+      return "HINT_ERROR";
+    }
+
+    const result = JSON.parse(text.trim());
     return result.word;
   } catch (error) {
     console.error("Gemini hint failed:", error);
@@ -42,7 +47,13 @@ export const checkWordWithGemini = async (word: string): Promise<boolean> => {
       model: "gemini-3-flash-preview",
       contents: `Is the word "${word}" a valid common English word? Answer only YES or NO.`,
     });
-    return response.text.trim().toUpperCase().includes("YES");
+    
+    const text = response.text;
+    if (!text) {
+      return false;
+    }
+    
+    return text.trim().toUpperCase().includes("YES");
   } catch (error) {
     return false;
   }
